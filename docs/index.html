@@ -15,12 +15,12 @@
             margin: 0; 
         }
         h1 { 
-            font-size: 21px; 
+            font-size: 2.3rem; 
             text-shadow: 0 0 10px #00ff99; 
             margin-bottom: 30px;
         }
         #status { 
-            font-size: 1.5rem; 
+            font-size: 1.3rem; 
             color: #888; 
             transition: all 0.3s ease;
             cursor: pointer;
@@ -29,8 +29,9 @@
             border: 1px solid #333;
             border-radius: 4px;
             user-select: none;
+            max-width: 80%;
+            line-height: 1.6;
         }
-        /* Make it look interactive on hover */
         #status:hover {
             border-color: #00ff99;
             color: #00ff99;
@@ -54,13 +55,20 @@
         const statusText = document.getElementById('status');
         let isListening = false;
 
-        // 1. Auto-start ONLY if they already granted permission in a past session
-        if (Notification.permission === 'granted') {
+        // Auto-start loop if permissions were established previously
+        if ("Notification" in window && Notification.permission === 'granted') {
             startListening();
         }
 
-        // 2. This is the user gesture function triggered by the click
         async function requestNotificationPermission() {
+            // iOS Fallback Check: Native Safari blocks the 'Notification' object completely
+            if (!("Notification" in window)) {
+                statusText.innerText = "iOS detected: Tap Share ➔ 'Add to Home Screen' to launch as an app and activate alerts.";
+                statusText.style.color = "#ffcc00";
+                statusText.style.borderColor = "#ffcc00";
+                return;
+            }
+
             if (Notification.permission !== 'granted') {
                 statusText.innerText = "Requesting Permission...";
                 const permission = await Notification.requestPermission();
@@ -68,12 +76,11 @@
                 if (permission === 'granted') {
                     startListening();
                 } else {
-                    statusText.innerText = "Permission Denied (Check Browser Settings)";
+                    statusText.innerText = "Permission Denied (Reset Browser Site Settings)";
                     statusText.style.color = "#ff3333";
                     statusText.style.borderColor = "#ff3333";
                 }
             } else {
-                // If they click it again after it's already active
                 startListening();
             }
         }
@@ -82,22 +89,28 @@
             if (isListening) return;
             isListening = true;
             
-            statusText.innerText = "Listening for Meditation Gong";
+            statusText.innerText = "Listen for the MINDFULNESS Gong";
+            statusText.style.color = "#888";
+            statusText.style.borderColor = "#333";
             statusText.classList.remove('active');
 
+            // Establish direct SSE streaming pipeline to ntfy network
             const eventSource = new EventSource(`https://ntfy.sh/${TOPIC_NAME}/sse`);
             
             eventSource.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 
+                // Fire native notification payload
                 new Notification(data.title || "Quantum Sangha", {
                     body: data.message || "🔔 Time to meditate.",
                     icon: 'https://cdn-icons-png.flaticon.com/512/3663/3663335.png'
                 });
 
+                // Flash state layout: Bright green active phase
                 statusText.innerText = "Bell Rung";
                 statusText.classList.add('active');
 
+                // Revert state machine precisely back after 5 seconds
                 setTimeout(() => {
                     statusText.innerText = "Listen for Meditation Gong";
                     statusText.classList.remove('active');
@@ -105,7 +118,7 @@
             };
 
             eventSource.onerror = () => {
-                console.log("Reconnecting to quantum stream...");
+                console.log("Reconnecting to quantum sync stream...");
             };
         }
     </script>
