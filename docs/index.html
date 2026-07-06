@@ -99,8 +99,8 @@
             isListening = true;
             
             // Revert state text smoothly back to standby listening mode
-            statusText.innerText = "Listen for Meditation Gong";
-            statusText.style.color = "#888";
+            statusText.innerText = "Listening for Meditation Gong";
+            statusText.style.color = "palevioletred";
             statusText.style.borderColor = "#333";
             statusText.classList.remove('active');
 
@@ -115,7 +115,7 @@
 
                 // Fire the system notification banner
                 new Notification(data.title || "Quantum Sangha", {
-                    body: data.message || "🔔 Time to meditate.",
+                    body: data.message || "🔔 Time for Mindfulness!",
                     icon: 'https://cdn-icons-png.flaticon.com/512/3663/3663335.png'
                 });
 
@@ -125,7 +125,7 @@
 
                 // Return back to tracking cycle configuration after 5 seconds
                 setTimeout(() => {
-                    statusText.innerText = "Listen for Meditation Gong";
+                    statusText.innerText = "Listening for Meditation Gong";
                     statusText.classList.remove('active');
                 }, 5000);
             };
