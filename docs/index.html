@@ -50,7 +50,7 @@
     <div id="status" onclick="requestNotificationPermission()">Tap to Connect & Listen</div>
 
     <script>
-        const TOPIC_NAME = "quantum_sangha_circle_99x"; 
+        const TOPIC_NAME = "quantum_sangha_groupie"; 
         const statusText = document.getElementById('status');
         let isListening = false;
 
@@ -82,7 +82,7 @@
             if (isListening) return;
             isListening = true;
             
-            statusText.innerText = "Listen for Meditation Gong";
+            statusText.innerText = "Listening for Meditation Gong";
             statusText.classList.remove('active');
 
             const eventSource = new EventSource(`https://ntfy.sh/${TOPIC_NAME}/sse`);
