@@ -53,35 +53,45 @@
     <script>
         const TOPIC_NAME = "quantum_sangha_groupie"; 
         const statusText = document.getElementById('status');
+        const gongAudio = document.getElementById('gongAudio');
         let isListening = false;
 
-        // Auto-start loop if permissions were established previously
-        if ("Notification" in window && Notification.permission === 'granted') {
-            startListening();
-        }
+        // Note: We completely removed the old auto-start on load logic here 
+        // to force the user gesture on every visit.
 
-        async function requestNotificationPermission() {
-            // iOS Fallback Check: Native Safari blocks the 'Notification' object completely
+        async function initializeSanghaApp() {
+            // 1. iOS Fallback Capability Check
             if (!("Notification" in window)) {
                 statusText.innerText = "iOS detected: Tap Share ➔ 'Add to Home Screen' to launch as an app and activate alerts.";
-                statusText.style.color = "mediumvioletred";
+                statusText.style.color = "#ffcc00";
                 statusText.style.borderColor = "#ffcc00";
                 return;
             }
 
-            if (Notification.permission !== 'granted') {
-                statusText.innerText = "Requesting Permission...";
+            // 2. Instantly unlock the audio hardware context using this click
+            gongAudio.play().then(() => { 
+                gongAudio.pause(); 
+                gongAudio.currentTime = 0; 
+            }).catch(e => console.log("Audio primer block:", e));
+
+            // 3. Conditional Check: Only prompt for notification permissions if they haven't decided yet
+            if (Notification.permission === 'default') {
+                statusText.innerText = "Requesting Notification Permission...";
                 const permission = await Notification.requestPermission();
                 
                 if (permission === 'granted') {
                     startListening();
                 } else {
                     statusText.innerText = "Permission Denied (Reset Browser Site Settings)";
-                    statusText.style.color = "red";
+                    statusText.style.color = "#ff3333";
                     statusText.style.borderColor = "#ff3333";
                 }
-            } else {
+            } else if (Notification.permission === 'granted') {
+                // If they already approved it in the past, bypass the browser prompt cleanly
                 startListening();
+            } else {
+                statusText.innerText = "Notification Permission Blocked in Browser Settings";
+                statusText.style.color = "#ff3333";
             }
         }
 
@@ -89,28 +99,32 @@
             if (isListening) return;
             isListening = true;
             
-            statusText.innerText = "Listening for the MINDFULNESS Gong";
-            statusText.style.color = "palevioletred";
+            // Revert state text smoothly back to standby listening mode
+            statusText.innerText = "Listen for Meditation Gong";
+            statusText.style.color = "#888";
             statusText.style.borderColor = "#333";
             statusText.classList.remove('active');
 
-            // Establish direct SSE streaming pipeline to ntfy network
+            // Establish direct Server-Sent Events link to the ntfy instance channel
             const eventSource = new EventSource(`https://ntfy.sh/${TOPIC_NAME}/sse`);
             
             eventSource.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 
-                // Fire native notification payload
+                // Fire Audio Element (Now fully unlocked via the initial load tap!)
+                gongAudio.play().catch(e => console.log("Audio play failed:", e));
+
+                // Fire the system notification banner
                 new Notification(data.title || "Quantum Sangha", {
                     body: data.message || "🔔 Time to meditate.",
                     icon: 'https://cdn-icons-png.flaticon.com/512/3663/3663335.png'
                 });
 
-                // Flash state layout: Bright green active phase
+                // Display active flash confirmation state
                 statusText.innerText = "Bell Rung";
                 statusText.classList.add('active');
 
-                // Revert state machine precisely back after 5 seconds
+                // Return back to tracking cycle configuration after 5 seconds
                 setTimeout(() => {
                     statusText.innerText = "Listen for Meditation Gong";
                     statusText.classList.remove('active');
@@ -118,7 +132,7 @@
             };
 
             eventSource.onerror = () => {
-                console.log("Reconnecting to quantum sync stream...");
+                console.log("Reconnecting to quantum pipeline...");
             };
         }
     </script>
