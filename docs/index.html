@@ -16,12 +16,12 @@
         }
         h1 { 
             font-size: 22px; 
-            text-shadow: 0 0 10px red; 
+            text-shadow: 0 0 10px black; 
             margin-bottom: 30px;
         }
         #status { 
             font-size: 1.3rem; 
-            color: seagreen; 
+            color: skyblue; 
             transition: all 0.3s ease;
             cursor: pointer;
             display: inline-block;
@@ -100,7 +100,7 @@
             
             // Revert state text smoothly back to standby listening mode
             statusText.innerText = "Listening for Meditation Gong";
-            statusText.style.color = "skyblue";
+            statusText.style.color = "seagreen";
             statusText.style.borderColor = "#333";
             statusText.classList.remove('active');
 
