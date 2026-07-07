@@ -8,7 +8,7 @@
     <style>
         body { 
             background: gold; 
-            color: black; 
+            color: yellow; 
             font-family: monospace; 
             text-align: center; 
             padding-top: 30vh; 
@@ -16,12 +16,12 @@
         }
         h1 { 
             font-size: 22px; 
-            text-shadow: 0 0 10px black; 
+            text-shadow: 0 0 10px red; 
             margin-bottom: 30px;
         }
         #status { 
             font-size: 1.3rem; 
-            color: palevioletred; 
+            color: seagreen; 
             transition: all 0.3s ease;
             cursor: pointer;
             display: inline-block;
@@ -37,7 +37,7 @@
             color: #00ff99;
         }
         #status.active {
-            color: #00ff99;
+            color: blue;
             text-shadow: 0 0 10px #00ff99;
             border-color: #00ff99;
             background: #1a3322;
@@ -62,8 +62,8 @@
             // 1. iOS Fallback Capability Check
             if (!("Notification" in window)) {
                 statusText.innerText = "iOS detected: Tap Share ➔ 'Add to Home Screen' to launch as an app and activate alerts.";
-                statusText.style.color = "#ffcc00";
-                statusText.style.borderColor = "#ffcc00";
+                statusText.style.color = "red";
+                statusText.style.borderColor = "blue";
                 return;
             }
 
@@ -82,15 +82,15 @@
                     startListening();
                 } else {
                     statusText.innerText = "Permission Denied (Reset Browser Site Settings)";
-                    statusText.style.color = "#ff3333";
-                    statusText.style.borderColor = "#ff3333";
+                    statusText.style.color = "red";
+                    statusText.style.borderColor = "black";
                 }
             } else if (Notification.permission === 'granted') {
                 // If they already approved it in the past, bypass the browser prompt cleanly
                 startListening();
             } else {
                 statusText.innerText = "Notification Permission Blocked in Browser Settings";
-                statusText.style.color = "#ff3333";
+                statusText.style.color = "red";
             }
         }
 
@@ -100,7 +100,7 @@
             
             // Revert state text smoothly back to standby listening mode
             statusText.innerText = "Listening for Meditation Gong";
-            statusText.style.color = "palevioletred";
+            statusText.style.color = "skyblue";
             statusText.style.borderColor = "#333";
             statusText.classList.remove('active');
 
