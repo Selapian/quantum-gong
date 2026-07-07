@@ -112,7 +112,7 @@
             isListening = true;
             
             // Revert state text smoothly back to standby listening mode
-            statusText.innerText = "Listening for Meditation Gong";
+            statusText.innerText = "Listening for Mindfulness Gong";
             statusText.style.color = "seagreen";
             statusText.style.borderColor = "#333";
             statusText.classList.remove('active');
@@ -138,7 +138,7 @@
 
                 // Return back to tracking cycle configuration after 5 seconds
                 setTimeout(() => {
-                    statusText.innerText = "Listening for Meditation Gong";
+                    statusText.innerText = "Listening for Mindfulness Gong";
                     statusText.classList.remove('active');
                 }, 5000);
             };
