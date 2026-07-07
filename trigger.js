@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 // Change "quantum_sangha_circle_99x" to your own unique secret topic name
 const TOPIC_NAME = "quantum_sangha_groupie";
 
