@@ -54,7 +54,7 @@
     <h1>⚛️ QUANTUM GONG ⚛️</h1>
     
     <div id="status" onclick="initializeSanghaApp()">Tap to Connect & Listen</div>
-    
+    <progress id="loader" style="width: 80%; accent-color: skyblue; margin-top: 20px;" hidden></progress>
     <audio id="gongAudio" src="gong.mp3" preload="auto"></audio>
 
     <script>
@@ -64,6 +64,7 @@
         let isListening = false;
 
         async function initializeSanghaApp() {
+            
             // 1. iOS Fallback Capability Check
             if (!("Notification" in window)) {
                 statusText.innerText = "iOS detected: Tap Share ➔ 'Add to Home Screen' to launch as an app and activate alerts.";
@@ -102,6 +103,8 @@
         function startListening() {
             if (isListening) return;
             isListening = true;
+
+            document.getElementById('loader').removeAttribute('hidden');
             
             // Revert state text smoothly back to standby listening mode
             statusText.innerText = "Listening for Meditation Gong";
