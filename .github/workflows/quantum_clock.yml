@@ -5,7 +5,6 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch: # Allows manual triggering
 
-# FIXED: Grants the workflow permission to commit changes back to your repo
 permissions:
   contents: write
 
@@ -19,12 +18,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-node: '20'
+          node-version: '20'
 
       - name: Query Qubit & Trigger Gong
         run: node trigger.js
 
-      # FIXED: Automatically makes a dummy commit to reset the 60-day hibernation timer
       - name: Keep workflow alive
         run: |
           git config --global user.name "github-actions[bot]"
