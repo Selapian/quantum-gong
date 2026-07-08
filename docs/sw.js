@@ -1,4 +1,4 @@
-const CACHE_NAME = 'quantum-gong-v13';
+const CACHE_NAME = 'quantum-gong-v14';
 const ASSETS = [
   './',
   './index.html',
@@ -47,6 +47,9 @@ self.addEventListener('push', (event) => {
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
+      
+      // FIXED: Reset head tracker to zero so overlapping cron triggers don't freeze playback states
+      audio.currentTime = 0;
       
       // Forces playback directly on the hardware path while phone is closed
       return audio.play().catch(err => console.log("Hardware playback error:", err));
