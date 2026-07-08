@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Quantum Gong</title>
-    <link rel="manifest" href="manifest.json?v=5">
+    <link rel="manifest" href="manifest.json?v=6">
     <style>
         body { 
             background: gold; 
@@ -13,6 +13,7 @@
             text-align: center; 
             padding-top: 30vh; 
             margin: 0; 
+            border: 8px dotted white;
             height: 100%;
             width: 100%;
             box-sizing: border-box; 
@@ -41,6 +42,13 @@
             border-color: blue;
             color: green;
         }
+        /* Lock state styling to make the browser version look deactivated */
+        .btn.locked {
+            color: #ff3333;
+            border-color: #ff3333;
+            background: #2b0000;
+            cursor: not-allowed;
+        }
         /* iOS Instruction Modal Overlay */
         #iosModal {
             display: none;
@@ -68,7 +76,7 @@
 
     <h1>⚛️ QUANTUM GONG ⚛️</h1>
     
-    <div id="status" class="btn" onclick="handleInstallAction()">Tap to Install App</div>
+    <div id="status" class="btn" onclick="handleInstallAction()">Initializing Launcher...</div>
 
     <div id="iosModal">
         <button onclick="closeIosModal()">X</button>
@@ -79,6 +87,7 @@
 
     <script>
         let deferredPrompt;
+        let appInstalledDetermined = false;
         const statusText = document.getElementById('status');
         const iosModal = document.getElementById('iosModal');
 
@@ -90,35 +99,61 @@
         // Register Service Worker early
         if ('serviceWorker' in navigator) {
           window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=5')
-              .then((reg) => console.log('SW Active', reg.scope))
-              .catch((err) => console.error('SW Fail:', err));
+            navigator.serviceWorker.register('./sw.js?v=6');
           });
         }
 
-        // Android Native Setup: Intercept the install option
+        // Track if the app was successfully installed during this session
+        window.addEventListener('appinstalled', () => {
+            appInstalledDetermined = true;
+            lockBrowserInterface();
+        });
+
+        // Intercept Android Native Installation Prompt
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            if (!isStandalone) {
+            
+            // If we are in the browser and the install prompt is available, they don't have it installed yet
+            if (!isStandalone && !appInstalledDetermined) {
                 statusText.innerText = "Install Android App";
                 statusText.style.color = "skyblue";
+                statusText.classList.remove('locked');
             }
         });
 
         // Initialize state configuration on load
         window.addEventListener('DOMContentLoaded', () => {
             if (isStandalone) {
+                // RUN MODE: Inside the App
                 startListening();
-            } else if (isIOS) {
-                statusText.innerText = "Add to Home Screen (iOS)";
-                statusText.style.color = "gold";
+            } else {
+                // BROWSER MODE: Check if already installed
+                setTimeout(() => {
+                    // If beforeinstallprompt hasn't fired on Android after 1 second, 
+                    // it usually means the PWA app is already installed on the device.
+                    if (!deferredPrompt && !isIOS) {
+                        lockBrowserInterface();
+                    } else if (isIOS) {
+                        statusText.innerText = "Add to Home Screen (iOS)";
+                        statusText.style.color = "gold";
+                    }
+                }, 1000); 
             }
         });
 
+        function lockBrowserInterface() {
+            statusText.innerText = "App Already Installed. Check Home Screen.";
+            statusText.classList.add('locked');
+            statusText.style.color = "#ff3333";
+        }
+
         // Smart Button Controller
         async function handleInstallAction() {
-            if (isStandalone) return;
+            // Unusable from browser if locked
+            if (statusText.classList.contains('locked') || isStandalone) {
+                return;
+            }
 
             if (isIOS) {
                 iosModal.style.display = "block";
@@ -127,9 +162,9 @@
                 const { outcome } = await deferredPrompt.userChoice;
                 console.log(`User installation choice: ${outcome}`);
                 deferredPrompt = null;
-                startListening();
-            } else {
-                statusText.innerText = "Initializing... Tap again.";
+                if (outcome === 'accepted') {
+                    lockBrowserInterface();
+                }
             }
         }
 
@@ -142,7 +177,6 @@
             statusText.style.color = "seagreen";
             statusText.style.borderColor = "#333";
 
-            // Open foreground listener connection for active tab state monitoring
             const eventSource = new EventSource(`https://ntfy.sh/${TOPIC_NAME}/sse`);
             
             eventSource.onmessage = () => {
