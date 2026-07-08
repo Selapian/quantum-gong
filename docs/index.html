@@ -126,6 +126,17 @@
             }
             return outputArray;
         }
+
+        // Add this inside the script tag of index.html to catch background thread audio requests
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.command === "play_gong") {
+            const audio = new Audio('./gong.mp3');
+            audio.crossOrigin = "anonymous";
+            audio.play().catch(err => console.log("Audio play blocked by context:", err));
+        }
+    });
+}
     </script>
 </body>
 </html>
