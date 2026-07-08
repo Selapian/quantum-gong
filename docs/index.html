@@ -4,18 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Quantum Gong</title>
-    <link rel="manifest" href="manifest.json?v=11">
+    <link rel="manifest" href="manifest.json?v=12">
     <style>
         body { 
-            background: gold; /* Your exact bright gold background */
-            color: #111111; /* Dark charcoal header/base text */
+            background: gold; 
+            color: #111111; 
             font-family: monospace; 
             text-align: center; 
             margin: 0; 
-            height: 100vh; /* Keeps content bounded precisely inside the mobile frame */
+            height: 100vh; 
             width: 100vw;
             box-sizing: border-box; 
-            display: flex; /* FIXED: Use flex positioning so elements can't slide off-screen */
+            display: flex; 
             flex-direction: column;
             justify-content: center;
             align-items: center;
@@ -24,12 +24,12 @@
         h1 { 
             font-size: 22px; 
             text-shadow: 0 0 1px rgba(0,0,0,0.2); 
-            margin: 0 0 30px 0; /* Keeps a consistent gap above the button */
+            margin: 0 0 30px 0; 
             color: #111111; 
         }
         .btn { 
             font-size: 1.3rem; 
-            color: blue; /* Your exact default blue button text style */
+            color: blue; 
             transition: all 0.3s ease;
             cursor: pointer;
             display: inline-block;
@@ -44,7 +44,6 @@
         .btn:hover {
             background: rgba(255, 255, 255, 0.5);
         }
-        /* Style for when the app is already installed and locked in the browser */
         .btn.locked {
             color: #006633;
             border-color: #006633;
@@ -78,7 +77,8 @@
 
     <h1>⚛️ QUANTUM GONG ⚛️</h1>
     
-    <div id="status" class="btn" onclick="handleInstallAction()">Tap to Connect & Listen</div>
+    <!-- Changed default state string to reflect loading/checking sequence -->
+    <div id="status" class="btn" onclick="handleInstallAction()">Detecting Status...</div>
 
     <div id="iosModal">
         <button onclick="closeIosModal()">X</button>
@@ -100,7 +100,7 @@
 
         if ('serviceWorker' in navigator) {
           window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=11');
+            navigator.serviceWorker.register('./sw.js?v=12');
           });
         }
 
@@ -109,6 +109,7 @@
             lockBrowserInterface();
         });
 
+        // Captures Android browser event and forces button text to layout configuration instantly
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -116,30 +117,33 @@
             if (!isStandalone && !appInstalledDetermined) {
                 statusText.innerText = "Install Android App";
                 statusText.style.color = "#0044cc";
-                statusText.style.borderColor = "#0044cc";
+                statusText.style.borderColor = "#111111";
                 statusText.classList.remove('locked');
             }
         });
 
         window.addEventListener('DOMContentLoaded', () => {
             if (isStandalone) {
+                // APP MODE: Running standalone from Home screen on either iOS or Android
                 statusText.innerText = "Tap to Connect & Listen";
                 statusText.style.color = "blue";
                 statusText.style.borderColor = "#111111";
             } else {
+                // BROWSER MODE: Run state checks after layout engine renders
                 setTimeout(() => {
-                    if (!deferredPrompt && !isIOS) {
-                        lockBrowserInterface();
-                    } else if (isIOS) {
+                    if (isIOS) {
+                        // FIXED syntax bug here: Added missing assignment operator '='
                         statusText.innerText = "Add to Home Screen (iOS)";
-                        statusText.style.color "blue";
-                        statusText.style.borderColor = "#775500";
+                        statusText.style.color = "blue";
+                        statusText.style.borderColor = "#111111";
+                    } else if (!deferredPrompt) {
+                        // If Android and beforeinstallprompt hasn't fired, it is already on device
+                        lockBrowserInterface();
                     }
-                }, 1000); 
+                }, 800); 
             }
         });
 
-        // FIXED: Changes button color to green when locked in browser mode
         function lockBrowserInterface() {
             statusText.innerText = "App Already Installed. Check Home Screen.";
             statusText.classList.add('locked');
