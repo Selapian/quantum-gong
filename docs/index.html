@@ -13,6 +13,7 @@
             text-align: center; 
             padding-top: 30vh; 
             margin: 0; 
+            border: 8px dotted white;
             height: 100%;
             width: 100%;
             box-sizing: border-box; 
@@ -155,124 +156,6 @@
                     statusText.style.color = "seagreen";
                     statusText.style.borderColor = "#333";
                 }, 5000);
-            };
-        }
-    </script>
-</body>
-</html>            max-width: 80%;
-            line-height: 1.6;
-        }
-        #status:hover {
-            border-color: blue;
-            color: green;
-        }
-        #status.active {
-            color: blue;
-            text-shadow: 0 0 10px #00ff99;
-            border-color: #00ff99;
-            background: #1a3322;
-        }
-    </style>
-</head>
-<body>
-
-    <h1>⚛️ QUANTUM GONG ⚛️</h1>
-    
-    <div id="status" onclick="initializeSanghaApp()">Tap to Connect & Listen</div>
-    <audio id="gongAudio" src="gong.mp3" preload="auto"></audio>
-
-    <script>
-        if ('serviceWorker' in navigator) {
-          window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-              .then((reg) => console.log('Service Worker registered successfully!', reg.scope))
-              .catch((err) => console.error('Service Worker registration failed:', err));
-          });
-        }
-        
-        const TOPIC_NAME = "quantum_sangha_groupie"; 
-        const statusText = document.getElementById('status');
-        const gongAudio = document.getElementById('gongAudio');
-        let isListening = false;
-
-        async function initializeSanghaApp() {
-            
-            // 1. iOS Fallback Capability Check
-            if (!("Notification" in window)) {
-                statusText.innerText = "iOS detected: Tap Share ➔ 'Add to Home Screen' to launch as an app and activate alerts.";
-                statusText.style.color = "red";
-                statusText.style.borderColor = "blue";
-                return;
-            }
-
-            // 2. Instantly unlock the audio hardware context using this click
-            gongAudio.play().then(() => { 
-                gongAudio.pause(); 
-                gongAudio.currentTime = 0; 
-            }).catch(e => console.log("Audio primer block:", e));
-
-            // 3. Conditional Check: Only prompt for notification permissions if they haven't decided yet
-            if (Notification.permission === 'default') {
-                statusText.innerText = "Requesting Notification Permission...";
-                const permission = await Notification.requestPermission();
-                
-                if (permission === 'granted') {
-                    startListening();
-                } else {
-                    statusText.innerText = "Permission Denied (Reset Browser Site Settings)";
-                    statusText.style.color = "red";
-                    statusText.style.borderColor = "black";
-                }
-            } else if (Notification.permission === 'granted') {
-                // If they already approved it in the past, bypass the browser prompt cleanly
-                startListening();
-            } else {
-                statusText.innerText = "Notification Permission Blocked in Browser Settings";
-                statusText.style.color = "red";
-            }
-        }
-
-        function startListening() {
-            if (isListening) return;
-            isListening = true;
-            
-            // Revert state text smoothly back to standby listening mode
-            statusText.innerText = "Listening for Mindfulness Gong";
-            statusText.style.color = "seagreen";
-            statusText.style.borderColor = "#333";
-            statusText.classList.remove('active');
-
-            // Establish direct Server-Sent Events link to the ntfy instance channel
-            const eventSource = new EventSource(`https://ntfy.sh/${TOPIC_NAME}/sse`);
-            
-            eventSource.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    
-    // FIXED: Reset the audio track to the beginning so it can loop multiple times
-    gongAudio.currentTime = 0; 
-    
-    // Fire Audio Element safely
-    gongAudio.play().catch(e => console.log("Audio play failed:", e));
-
-    // Fire the system notification banner
-    new Notification(data.title || "Quantum Sangha", {
-        body: data.message || "🔔 Time for Mindfulness!",
-        icon: 'https://cdn-icons-png.flaticon.com/512/3663/3663335.png'
-    });
-
-    // Display active flash confirmation state
-    statusText.innerText = "Bell Rung";
-    statusText.classList.add('active');
-
-    // Return back to tracking cycle configuration after 5 seconds
-    setTimeout(() => {
-        statusText.innerText = "Listening for Mindfulness Gong";
-        statusText.classList.remove('active');
-    }, 5000);
-};
-
-            eventSource.onerror = () => {
-                console.log("Reconnecting to quantum pipeline...");
             };
         }
     </script>
