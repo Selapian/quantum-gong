@@ -1,4 +1,4 @@
-const CACHE_NAME = 'quantum-gong-v20';
+const CACHE_NAME = 'quantum-gong-v21';
 const ASSETS = ['./', './index.html', './manifest.json', './gong.mp3'];
 
 self.addEventListener('install', (event) => {
