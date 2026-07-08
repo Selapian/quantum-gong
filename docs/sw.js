@@ -30,6 +30,7 @@ self.addEventListener('push', (event) => {
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
         audio.currentTime = 0;
+        console.log("Gong Rung!")
         return audio.play();
       })
     ])
