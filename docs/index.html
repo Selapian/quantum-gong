@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Quantum Gong</title>
-    <link rel="manifest" href="manifest.json?v=13">
+    <link rel="manifest" href="manifest.json?v=15">
     <style>
         body { 
             background: gold; 
@@ -90,7 +90,6 @@
         let deferredPrompt;
         let appInstalledDetermined = false;
         let isListening = false;
-        let swRegistration = null;
         const statusText = document.getElementById('status');
         const iosModal = document.getElementById('iosModal');
 
@@ -100,9 +99,7 @@
 
         if ('serviceWorker' in navigator) {
           window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=13').then(reg => {
-                swRegistration = reg;
-            });
+            navigator.serviceWorker.register('./sw.js?v=15');
           });
         }
 
@@ -150,7 +147,6 @@
 
         async function handleInstallAction() {
             if (isStandalone && !isListening) {
-                // Prime the local web audio pipeline
                 const primeAudio = new Audio('./gong.mp3');
                 primeAudio.play().then(() => {
                     primeAudio.pause();
@@ -179,67 +175,17 @@
             iosModal.style.display = "none";
         }
 
-        async function startListening() {
+        function startListening() {
             isListening = true;
             statusText.innerText = "Listening for Mindfulness Gong";
             statusText.style.color = "mediumvioletred";
             statusText.style.borderColor = "#006611";
 
-            // Establish background handshake linking ntfy.sh directly to the worker
-            if (swRegistration) {
-                try {
-                    const permission = await Notification.requestPermission();
-                    if (permission === 'granted') {
-                        // Public key provided by ntfy.sh for browser generation delivery mapping
-                        const ntfyPublicKey = 'BIEg7gN6gT9Ror5p0SAn00w7f_q_D88z_3ZzK5H12O1S_TDksI6gO1V6g-N1SIml874S_A8q_fSAs_A6gO1V6g';
-                        const convertedKey = urlBase64ToUint8Array(ntfyPublicKey);
-
-                        const subscription = await swRegistration.pushManager.subscribe({
-                            userVisibleOnly: true,
-                            applicationServerKey: convertedKey
-                        });
-
-                        await fetch(`https://ntfy.sh/${TOPIC_NAME}/webpush`, {
-                            method: 'POST',
-                            body: JSON.stringify(subscription),
-                            headers: { 'Content-Type': 'application/json' }
-                        });
-                        console.log("Background channel successfully established.");
-                    }
-                } catch (err) {
-                    console.log("Background engine setup skip/fail:", err);
-                }
-            }
-
-            // Foreground SSE fall-back path
-            const eventSource = new EventSource(`https://ntfy.sh/${TOPIC_NAME}/sse`);
-            eventSource.onmessage = () => {
-                triggerGongUI();
-            };
+            // Direct frontend SSE fall-back engine line link
+    
         }
 
-        function triggerGongUI() {
-            statusText.innerText = "Bell Rung";
-            statusText.style.color = "black";
-            statusText.style.borderColor = "#6600cc";
-
-            setTimeout(() => {
-                statusText.innerText = "Listening for Mindfulness Gong";
-                statusText.style.color = "mediumvioletred";
-                statusText.style.borderColor = "#006611";
-            }, 5000);
-        }
-
-        function urlBase64ToUint8Array(base64String) {
-            const padding = '='.repeat((4 - base64String.length % 4) % 4);
-            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-            const rawData = window.atob(base64);
-            const outputArray = new Uint8Array(rawData.length);
-            for (let i = 0; i < rawData.length; ++i) {
-                outputArray[i] = rawData.charCodeAt(i);
-            }
-            return outputArray;
-        }
+        
     </script>
 </body>
 </html>
