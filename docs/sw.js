@@ -14,11 +14,8 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('push', (event) => {
-  console.log("Push signal caught.");
-
   event.waitUntil(
     Promise.all([
-      // Satisfies Android's required foreground visual tracking execution loop
       self.registration.showNotification('Quantum Gong', {
         body: '⚛️ The bell is ringing...',
         tag: 'gong-alert'
@@ -29,8 +26,8 @@ self.addEventListener('push', (event) => {
         const audioBlob = await response.blob();
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
+        console.log("Gong Rung!");
         audio.currentTime = 0;
-        console.log("Gong Rung!")
         return audio.play();
       })
     ])
