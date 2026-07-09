@@ -215,7 +215,7 @@
             }).catch(err => console.log("Audio priming failed:", err));
         
             try {
-                const registration = await navigator.serviceWorker.register('./sw.js?v=26');
+                const registration = await navigator.serviceWorker.register('./sw.js?v=27');
                 const token = await messaging.getToken({ 
                     vapidKey: 'BOFZKCCCIb-VDBJBa7TZX-DH_LVEHOVl1X7QMmWzaZhOE7hyzkrIcZME1rXRW1r-TWGCBVytxz1ZchxMp82h1ok',
                     serviceWorkerRegistration: registration 
