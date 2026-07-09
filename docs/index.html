@@ -8,32 +8,81 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
     <link rel="manifest" href="manifest.json?v=20">
     <style>
-        body { background: gold; color: #111111; font-family: monospace; text-align: center; margin: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .btn { font-size: 1.3rem; color: blue; padding: 15px 30px; border: 2px solid #111111; border-radius: 4px; cursor: pointer; background: rgba(255, 255, 255, 0.3); }
-        .btn.locked { color: green; border-color: green; background: #ccffdd; }
+        body { background: gold; color: #111111; font-family: monospace; text-align: center; margin: 0; height: 100vh; width: 100vw; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; }
+        h1 { font-size: 22px; text-shadow: 0 0 1px rgba(0,0,0,0.2); margin: 0 0 30px 0; }
+        .btn { font-size: 1.3rem; color: blue; transition: all 0.3s ease; cursor: pointer; display: inline-block; padding: 15px 30px; border: 2px solid #111111; border-radius: 4px; user-select: none; max-width: 80%; line-height: 1.6; background: rgba(255, 255, 255, 0.3); }
+        .btn.locked { color: #006633; border-color: #006633; background: #ccffdd; cursor: not-allowed; }
+        #iosModal { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: white; padding: 20px; border-radius: 12px; border: 2px solid black; width: 85%; box-shadow: 0 0 20px black; z-index: 999; text-align: left; }
+        #iosModal h3 { margin: 0 0 10px 0; color: gold; text-align: center; }
+        #iosModal button { background: red; color: white; border: none; padding: 5px 10px; border-radius: 4px; float: right; cursor: pointer; }
     </style>
 </head>
 <body>
+
     <h1>⚛️ QUANTUM GONG ⚛️</h1>
     <div id="status" class="btn" onclick="handleInstallAction()">Loading...</div>
 
+    <div id="iosModal">
+        <button onclick="closeIosModal()">X</button>
+        <h3>iPhone Installation</h3>
+        <p>1. Tap the <strong>Share</strong> button at the bottom of Safari.</p>
+        <p>2. Select <strong>"Add to Home Screen"</strong>.</p>
+    </div>
+
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyBLyr3X4zPwJyFz2X0BiOO9Tj360TVgOWY", projectId: "quantum-gong-b203e", messagingSenderId: "130086211036", appId: "1:130086211036:web:30d9fbf9503e24d4495319" };
+        // FIREBASE SETUP
+        const firebaseConfig = { apiKey: "AIzaSyBLyr3X4zPwJyFz2X0BiOO9Tj360TVgOWY", projectId: "quantum-gong-b203e", messagingSenderId: "130086211036", appId: "1:130086211036:web:30d9fbf9503e24d4495319"};
         firebase.initializeApp(firebaseConfig);
         const messaging = firebase.messaging();
-        const TOPIC = "quantum_sangha_groupie";
+
+        let deferredPrompt;
+        const statusText = document.getElementById('status'), iosModal = document.getElementById('iosModal');
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (!isStandalone) statusText.innerText = "Install Android App";
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (isStandalone) statusText.innerText = "Tap to Connect & Listen";
+            else if (isIOS) statusText.innerText = "Add to Home Screen (iOS)";
+            else statusText.innerText = "Install App to Begin";
+        });
+
+        async function handleInstallAction() {
+            if (isStandalone) {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') startListening();
+                else statusText.innerText = "Permission Denied";
+            } else if (isIOS) {
+                iosModal.style.display = "block";
+            } else if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    deferredPrompt = null;
+                    statusText.innerText = "App Installed & Active";
+                }
+            }
+        }
 
         async function startListening() {
             statusText.innerText = "Connecting...";
             try {
                 const token = await messaging.getToken({ vapidKey: 'BOFZKCCCIb-VDBJBa7TZX-DH_LVEHOVl1X7QMmWzaZhOE7hyzkrIcZME1rXRW1r-TWGCBVytxz1ZchxMp82h1ok' });
-                // Call your unified Val.Town script with the token
-                await fetch("https://YOUR_USERNAME-MAIN_VAL.web.val.run?subscribe=" + encodeURIComponent(token));
-                statusText.innerText = "Connected to Quantum Sangha";
+                await fetch("https://Selapian--84abfed87a0d11f194f71607ee4eb77e.web.val.run?subscribe=" + encodeURIComponent(token));
+                statusText.innerText = "Connected. Listening for Gong...!";
                 statusText.classList.add('locked');
-            } catch (err) { statusText.innerText = "Connection Failed"; }
+            } catch (err) {
+                console.error(err);
+                statusText.innerText = "Connection Failed";
+            }
         }
-        // ... (Include your existing install logic here)
+
+        function closeIosModal() { iosModal.style.display = "none"; }
     </script>
 </body>
 </html>
