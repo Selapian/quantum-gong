@@ -20,7 +20,7 @@
 <body>
 
     <h1>⚛️ QUANTUM GONG ⚛️</h1>
-    <div id="status" class="btn" onclick="handleInstallAction()">Loading...</div>
+    <div id="status" class="btn" onclick="handleInstallAction()">Checking Status...</div>
     
     <div id="install-instructions" style="color: black; font-size:16px; padding: 20px;">
       <p>
@@ -45,14 +45,11 @@
         const messaging = firebase.messaging();
 
         // --- 1. Global State Variables ---
-        let deferredPrompt;
-        let appInstalledDetermined = false;
+        let deferredPrompt = null;
         let isListening = false;
         
         const iosModal = document.getElementById('iosModal');
         const installInstructions = document.getElementById('install-instructions');
-        
-        // Declare the HTML5 audio object globally at the start
         const gongAudio = new Audio('./gong.mp3');
 
         // Safe global helper functions to check environments dynamically
@@ -71,41 +68,37 @@
             const statusText = document.getElementById('status');
         
             if (!statusText) return;
-            if (isListening) return; // Keep "Connected" text if listening
+            if (isListening) return; // Retain active connection message if connected
 
             if (isStandalone) {
+                // RUNNING AS PWA
                 if (installInstructions) installInstructions.style.display = 'none';
                 statusText.innerText = "Tap to Connect & Listen"; 
                 statusText.style.color = "blue"; 
                 statusText.style.borderColor = "#111111";
                 statusText.classList.remove('locked');
             } else if (isIOS) {
+                // RUNNING ON IOS SAFARI BROWSER
                 if (installInstructions) installInstructions.style.display = 'block';
                 statusText.innerText = "Add to Home Screen (iOS)"; 
                 statusText.style.color = "blue"; 
                 statusText.style.borderColor = "#111111";
                 statusText.classList.remove('locked');
             } else if (deferredPrompt) {
+                // DESKTOP/ANDROID AND UNINSTALLED (Prompt captured)
                 if (installInstructions) installInstructions.style.display = 'block';
                 statusText.innerText = "Install Quantum Gong App"; 
                 statusText.style.color = "#0044cc"; 
                 statusText.style.borderColor = "#111111"; 
                 statusText.classList.remove('locked');
             } else {
-                if (!appInstalledDetermined) {
-                    statusText.innerText = "Checking App Status...";
-                    statusText.style.color = "black";
-                }
+                // FALLBACK FOR INSTALLED DESKTOP SESSIONS (Where prompt won't fire)
+                if (installInstructions) installInstructions.style.display = 'none';
+                statusText.innerText = "App Already Installed. Check Home Screen."; 
+                statusText.classList.add('locked'); 
+                statusText.style.color = "green"; 
+                statusText.style.borderColor = "#006633";
             }
-        }
-        
-        function lockBrowserInterface() {
-            const statusText = document.getElementById('status');
-            if (!statusText || isListening) return;
-            statusText.innerText = "App Already Installed. Check Home Screen."; 
-            statusText.classList.add('locked'); 
-            statusText.style.color = "green"; 
-            statusText.style.borderColor = "#006633";
         }
         
         // --- 3. Event Listeners ---
@@ -114,13 +107,13 @@
             navigator.serviceWorker.addEventListener('message', (event) => {
                 if (event.data?.command === "play_gong") {
                     console.log("Push received while app is open.");
-                    // Play the predefined audio pipeline element
                     gongAudio.currentTime = 0;
                     gongAudio.play().catch(e => console.log("Playback failed:", e));
                 }
             });
         }
 
+        // Capture installation prompt readiness for standard web browsers
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault(); 
             deferredPrompt = e;
@@ -128,23 +121,12 @@
         });
         
         window.addEventListener('appinstalled', () => { 
-            appInstalledDetermined = true; 
-            lockBrowserInterface(); 
+            deferredPrompt = null;
             checkInstallationStatus();
         });
         
-        window.addEventListener('DOMContentLoaded', () => {
-            checkInstallationStatus();
-        
-            if (!getIsStandalone()) {
-                setTimeout(() => {
-                    if (!deferredPrompt && !getIsStandalone() && !getIsIOS()) { 
-                        lockBrowserInterface(); 
-                    }
-                }, 1500); 
-            }
-        });
-        
+        // Run checks during essential lifecycle events to update the UI
+        window.addEventListener('DOMContentLoaded', checkInstallationStatus);
         window.addEventListener('load', checkInstallationStatus);
         
         // --- 4. Interactive Actions ---
@@ -158,13 +140,59 @@
             if (isStandalone && !isListening) {
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
-                    // Unified variable name: primes the active audio channel for iOS
+                    // Unlock the HTML5 channel for iOS sessions
                     gongAudio.play().then(() => {
                         gongAudio.pause();
                         gongAudio.currentTime = 0;
-                        console.log("HTML5 Audio context verified and unlocked.");
-                    }).catch(err => console.log("Audio priming failed:", err));
+                        console.log("HTML5 audio channel unlocked.");
+                    }).catch(err => console.log("Audio channel unlock failed:", err));
             
                     startListening();
                 } else {
-                    statusText.
+                    statusText.innerText = "Permission Denied";
+                    statusText.style.color = "red";
+                }
+                return;
+            }
+        
+            if (statusText.classList.contains('locked') || isStandalone) return;
+            
+            if (isIOS) { 
+                if (iosModal) iosModal.style.display = "block"; 
+            } else if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice; 
+                deferredPrompt = null;
+                if (outcome === 'accepted') { 
+                    checkInstallationStatus();
+                }
+            }
+        }
+        
+        function closeIosModal() { 
+            if (iosModal) iosModal.style.display = "none"; 
+        }
+
+        async function startListening() {
+            const statusText = document.getElementById('status');
+            statusText.innerText = "Connecting...";
+            try {
+                const registration = await navigator.serviceWorker.register('./sw.js?v=27');
+                const token = await messaging.getToken({ 
+                    vapidKey: 'BOFZKCCCIb-VDBJBa7TZX-DH_LVEHOVl1X7QMmWzaZhOE7hyzkrIcZME1rXRW1r-TWGCBVytxz1ZchxMp82h1ok',
+                    serviceWorkerRegistration: registration 
+                });
+                await fetch("https://Selapian--84abfed87a0d11f194f71607ee4eb77e.web.val.run?subscribe=" + encodeURIComponent(token));
+                isListening = true;
+                statusText.innerText = "Connected. Listening for Gong...!";
+                statusText.style.color = "#006633";
+                statusText.classList.add('locked');
+            } catch (err) {
+                console.error(err);
+                statusText.innerText = "Connection Failed";
+                statusText.style.color = "red";
+            }
+        }
+    </script>
+</body>
+</html>
