@@ -88,11 +88,12 @@
                 statusText.style.borderColor = "#111111"; 
                 statusText.classList.remove('locked');
             } else {
-                if (installInstructions) installInstructions.style.display = 'block';
-                statusText.innerText = "Install App to Listen"; 
-                statusText.style.color = "#0044cc"; 
-                statusText.style.borderColor = "#111111";
-                statusText.classList.remove('locked');
+                // RESTORED Nice Already Installed Logic
+                if (installInstructions) installInstructions.style.display = 'none';
+                statusText.innerText = "App Already Installed. Check Home Screen."; 
+                statusText.classList.add('locked'); 
+                statusText.style.color = "green"; 
+                statusText.style.borderColor = "#006633";
             }
         }
         
@@ -130,7 +131,13 @@
                 return;
             }
         
-            if (statusText.classList.contains('locked')) return;
+            // If it matches your "Nice Already Installed" fallback state but they click it anyway on Android
+            if (statusText.classList.contains('locked') && !isStandalone && !isIOS) {
+                alert("This app appears to be installed already! Please look for 'Quantum Gong' on your Home Screen or App Drawer and open it there to connect.");
+                return;
+            }
+            
+            if (statusText.classList.contains('locked') || isStandalone) return;
             
             if (isIOS) { 
                 if (iosModal) iosModal.style.display = "block"; 
@@ -141,8 +148,6 @@
                 if (outcome === 'accepted') { 
                     checkInstallationStatus();
                 }
-            } else {
-                alert("Please tap your browser menu options and select 'Install app' or 'Add to Home screen' to continue!");
             }
         }
         
