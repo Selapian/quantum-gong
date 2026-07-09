@@ -19,6 +19,8 @@ self.addEventListener('push', (event) => {
     renotify: true,
     // Note: 'sound' in showNotification is ignored by most modern browsers
     // Audio must be played via the client message listener instead.
+    silent: true, 
+    sound: null
   });
 
   // Define the client messaging promise
