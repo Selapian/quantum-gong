@@ -111,11 +111,17 @@
         
         // --- 3. Event Listeners ---
         
-        // Service worker data bridge handler
+        // --- Place this inside your <script> tag under your global variables ---
+        let globalGongAudio = new Audio('./gong.mp3');
+        
+        // 1. SERVICE WORKER MESSAGE LISTENER (The bridge)
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.addEventListener('message', (event) => {
                 if (event.data?.command === "play_gong") {
-                    new Audio('./gong.mp3').play().catch(e => console.log("Audio play error:", e));
+                    console.log("Foreground message caught: playing primed gong audio.");
+                    // Instead of spawning a new Audio object, reuse the unlocked global entity
+                    globalGongAudio.currentTime = 0; 
+                    globalGongAudio.play().catch(e => console.log("Audio play error:", e));
                 }
             });
         }
@@ -155,9 +161,18 @@
             if (!statusText) return;
 
             // If it's already running natively, trigger connection/listening flow
+            // --- Update this specific block inside handleInstallAction() ---
             if (isStandalone && !isListening) {
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
+                    // CRITICAL FOR iOS: Play and immediately pause the audio within this user gesture.
+                    // This permanently unlocks the audio channel for this app session!
+                    globalGongAudio.play().then(() => {
+                        globalGongAudio.pause();
+                        globalGongAudio.currentTime = 0;
+                        console.log("Audio context successfully unlocked for iOS background triggers.");
+                    }).catch(err => console.log("Audio priming failed:", err));
+            
                     startListening();
                 } else {
                     statusText.innerText = "Permission Denied";
