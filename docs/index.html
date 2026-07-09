@@ -84,7 +84,7 @@
         async function startListening() {
             statusText.innerText = "Connecting...";
             try {
-                const registration = await navigator.serviceWorker.register('./sw.js?v=22');
+                const registration = await navigator.serviceWorker.register('./sw.js?v=23');
                 const token = await messaging.getToken({ 
                     vapidKey: 'BOFZKCCCIb-VDBJBa7TZX-DH_LVEHOVl1X7QMmWzaZhOE7hyzkrIcZME1rXRW1r-TWGCBVytxz1ZchxMp82h1ok',
                     serviceWorkerRegistration: registration 
