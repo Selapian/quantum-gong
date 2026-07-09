@@ -46,10 +46,19 @@
             if (!isStandalone) statusText.innerText = "Install Android App";
         });
 
-        window.addEventListener('DOMContentLoaded', () => {
-            if (isStandalone) statusText.innerText = "Tap to Connect & Listen";
-            else if (isIOS) statusText.innerText = "Add to Home Screen (iOS)";
-            else statusText.innerText = "Install App to Begin";
+        window.addEventListener('load', () => {
+            // Small delay to allow browser to register the "standalone" state correctly
+            setTimeout(() => {
+                const isStandaloneNow = window.matchMedia('(display-mode: standalone)').matches;
+                
+                if (isStandaloneNow) {
+                    statusText.innerText = "Tap to Connect & Listen";
+                } else if (isIOS) {
+                    statusText.innerText = "Add to Home Screen (iOS)";
+                } else {
+                    statusText.innerText = "Install App to Begin";
+                }
+            }, 500); 
         });
 
         async function handleInstallAction() {
