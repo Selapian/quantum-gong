@@ -24,10 +24,10 @@
     
     <div id="install-instructions" style="color: black; font-size:16px; padding: 20px;">
       <p>
-        Quantum Gong is the first Quantum Mindfulness Bell, derived from the practice of Thich Nhat Hanh, which rings at Quantum Random times (about once every 40 minutes), using a free Quantum Random Number Generator (QRNG). The QRNG pushes the same "True Random" Gong Sound, all at the same time, to everyone connected to the app. When we each hear the Gong Sound, we all practice Mindfulness, or sit and meditate, to cultivate ourselves!
+        Quantum Gong is the first Quantum Mindfulness Bell, derived from the practice of Thich Nhat Hanh, which rings at Quantum Random times (about once every 40 minutes), using a free Quantum Random Number Generator (QRNG). The QRNG pushes a "True Random" event, all at the same time, to everyone connected to the app. When we each receive the notification, we all practice Mindfulness, or sit and meditate, to cultivate ourselves!
       </p>
       <p>
-        Because websites cannot push notifications while the screen is closed, it is necessary to install "Quantum Gong" as an Native App. Android works fine. On iOS (Apple), press the three dots, then Press "Share", and scroll down to "Add to Home Screen." Then Open 'Quantum Gong' like a native app from your Home Screen. Note that iOS cannot play custom audio "gong sound" while the app is closed. If you are on Desktop, please use Google Chrome, install the App, then open "Quantum Gong" from the Desktop.
+        Because websites cannot reliably push alerts while the screen is closed, it is necessary to install "Quantum Gong" as a Native App. Android works natively. On iOS (Apple), press the three dots, then Press "Share", and scroll down to "Add to Home Screen." Then Open 'Quantum Gong' like a native app from your Home Screen. If you are on Desktop, please use Google Chrome, install the App, then open "Quantum Gong" from the Desktop.
       </p>
     </div>
 
@@ -50,7 +50,6 @@
         
         const iosModal = document.getElementById('iosModal');
         const installInstructions = document.getElementById('install-instructions');
-        const gongAudio = new Audio('./gong.mp3');
 
         // Safe global helper functions to check environments dynamically
         function getIsStandalone() {
@@ -68,52 +67,36 @@
             const statusText = document.getElementById('status');
         
             if (!statusText) return;
-            if (isListening) return; // Retain active connection message if connected
+            if (isListening) return; 
 
             if (isStandalone) {
-                // RUNNING AS PWA
                 if (installInstructions) installInstructions.style.display = 'none';
                 statusText.innerText = "Tap to Connect & Listen"; 
                 statusText.style.color = "blue"; 
                 statusText.style.borderColor = "#111111";
                 statusText.classList.remove('locked');
             } else if (isIOS) {
-                // RUNNING ON IOS SAFARI BROWSER
                 if (installInstructions) installInstructions.style.display = 'block';
                 statusText.innerText = "Add to Home Screen (iOS)"; 
                 statusText.style.color = "blue"; 
                 statusText.style.borderColor = "#111111";
                 statusText.classList.remove('locked');
             } else if (deferredPrompt) {
-                // DESKTOP/ANDROID AND UNINSTALLED (Prompt captured)
                 if (installInstructions) installInstructions.style.display = 'block';
                 statusText.innerText = "Install Quantum Gong App"; 
                 statusText.style.color = "#0044cc"; 
                 statusText.style.borderColor = "#111111"; 
                 statusText.classList.remove('locked');
             } else {
-                // FALLBACK FOR INSTALLED DESKTOP SESSIONS (Where prompt won't fire)
-                if (installInstructions) installInstructions.style.display = 'none';
-                statusText.innerText = "App Already Installed. Check Home Screen."; 
-                statusText.classList.add('locked'); 
-                statusText.style.color = "green"; 
-                statusText.style.borderColor = "#006633";
+                if (installInstructions) installInstructions.style.display = 'block';
+                statusText.innerText = "Install App to Listen"; 
+                statusText.style.color = "#0044cc"; 
+                statusText.style.borderColor = "#111111";
+                statusText.classList.remove('locked');
             }
         }
         
         // --- 3. Event Listeners ---
-        
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.addEventListener('message', (event) => {
-                if (event.data?.command === "play_gong") {
-                    console.log("Push received while app is open.");
-                    gongAudio.currentTime = 0;
-                    gongAudio.play().catch(e => console.log("Playback failed:", e));
-                }
-            });
-        }
-
-        // Capture installation prompt readiness for standard web browsers
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault(); 
             deferredPrompt = e;
@@ -125,7 +108,6 @@
             checkInstallationStatus();
         });
         
-        // Run checks during essential lifecycle events to update the UI
         window.addEventListener('DOMContentLoaded', checkInstallationStatus);
         window.addEventListener('load', checkInstallationStatus);
         
@@ -140,13 +122,6 @@
             if (isStandalone && !isListening) {
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
-                    // Unlock the HTML5 channel for iOS sessions
-                    gongAudio.play().then(() => {
-                        gongAudio.pause();
-                        gongAudio.currentTime = 0;
-                        console.log("HTML5 audio channel unlocked.");
-                    }).catch(err => console.log("Audio channel unlock failed:", err));
-            
                     startListening();
                 } else {
                     statusText.innerText = "Permission Denied";
@@ -155,7 +130,7 @@
                 return;
             }
         
-            if (statusText.classList.contains('locked') || isStandalone) return;
+            if (statusText.classList.contains('locked')) return;
             
             if (isIOS) { 
                 if (iosModal) iosModal.style.display = "block"; 
@@ -166,6 +141,8 @@
                 if (outcome === 'accepted') { 
                     checkInstallationStatus();
                 }
+            } else {
+                alert("Please tap your browser menu options and select 'Install app' or 'Add to Home screen' to continue!");
             }
         }
         
