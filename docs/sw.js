@@ -9,28 +9,26 @@ self.addEventListener('push', (event) => {
       const payloadData = event.data.json();
       if (payloadData.title) notificationTitle = payloadData.title;
       if (payloadData.body) notificationBody = payloadData.body;
-    } catch (e) {
-      // Handle fallback string content if needed
-    }
+    } catch (e) {}
   }
 
-  event.waitUntil(
-    Promise.all([
-      self.registration.showNotification(notificationTitle, {
-        body: notificationBody,
-        tag: 'gong-alert',
-        renotify: true,
-        // Using sound parameter (supported on mobile Android channels)
-        sound: './gong.mp3'
-      }),
+  // Define the notification promise
+  const notificationPromise = self.registration.showNotification(notificationTitle, {
+    body: notificationBody,
+    tag: 'gong-alert',
+    renotify: true,
+    // Note: 'sound' in showNotification is ignored by most modern browsers
+    // Audio must be played via the client message listener instead.
+  });
 
-      // Desktop audio processing: Opens a brief hidden client window context to fire audio cleanly
-      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-        if (clientList.length > 0) {
-          // If the app window is open or running in standalone mode, tell the window context to play the audio
-          clientList[0].postMessage({ command: "play_gong" });
-        }
-      })
-    ])
-  );
+  // Define the client messaging promise
+  const clientMessagePromise = self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    .then((clientList) => {
+      for (const client of clientList) {
+        client.postMessage({ command: "play_gong" });
+      }
+    });
+
+  // Wait for BOTH the notification to show and the message to be sent
+  event.waitUntil(Promise.all([notificationPromise, clientMessagePromise]));
 });
