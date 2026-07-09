@@ -34,8 +34,8 @@
     <div id="iosModal">
         <button onclick="closeIosModal()">X</button>
         <h3>iPhone Installation</h3>
-        <p>1. Tap the <strong>Share</strong> button at the bottom of Safari.</p>
-        <p>2. Select <strong>"Add to Home Screen"</strong>.</p>
+        <p>1. Tap the <strong>...</strong> then <strong>Share</strong> button at the bottom of Safari.</p>
+        <p>2. Scroll down (or click <strong>See More</strong>) and Select <strong>"Add to Home Screen"</strong>.</p>
     </div>
 
     <script>
@@ -57,71 +57,140 @@
                 }
             });
         }
-
-        function checkInstallationStatus() {
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-            const installInstructions = document.getElementById('install-instructions');
-            const appStatusText = document.getElementById('app-status');
         
-            if (isStandalone) {
-              // User is running the installed PWA
-              if (installInstructions) installInstructions.style.display = 'none';
-              if (appStatusText) appStatusText.innerText = "Quantum Gong is running as a Native App! ⚛️";
-            } else {
-              // User is in a regular browser
-              if (appStatusText) appStatusText.innerText = "Please install Quantum Gong as a Native App.";
-            }
-          }
+                // --- 1. Global State Variables ---
+        let deferredPrompt;
+        let appInstalledDetermined = false;
         
-          // Run the check when the page loads
-          window.addEventListener('load', checkInstallationStatus);
-
-        window.addEventListener('appinstalled', () => { appInstalledDetermined = true; lockBrowserInterface(); });
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault(); deferredPrompt = e;
-            if (!isStandalone && !appInstalledDetermined) {
-                statusText.innerText = "Install Android App"; statusText.style.color = "#0044cc"; statusText.style.borderColor = "#111111"; statusText.classList.remove('locked');
-            }
-        });
-
-        window.addEventListener('DOMContentLoaded', () => {
-            if (isStandalone) {
-                statusText.innerText = "Tap to Connect & Listen"; statusText.style.color = "blue"; statusText.style.borderColor = "#111111";
-            } else {
-                setTimeout(() => {
-                    if (isIOS) {
-                        statusText.innerText = "Add to Home Screen (iOS)"; statusText.style.color = "blue"; statusText.style.borderColor = "#111111";
-                    } else if (!deferredPrompt && !isStandalone) { lockBrowserInterface(); }
-                }, 1200); 
-            }
-        });
-
-        function lockBrowserInterface() {
-            statusText.innerText = "App Already Installed. Check Home Screen."; statusText.classList.add('locked'); statusText.style.color = "green"; statusText.style.borderColor = "#006633";
+        // Safely define elements globally or grab them dynamically
+        const statusText = document.getElementById('status-text') || document.getElementById('app-status'); 
+        const installInstructions = document.getElementById('install-instructions');
+        const iosModal = document.getElementById('ios-modal'); // Assumes your modal id is 'ios-modal'
+        
+        // Dynamic helpers to ensure we check the state at the exact moment needed
+        function getIsStandalone() {
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
         }
-
+        
+        function getIsIOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        }
+        
+        // --- 2. Centralized UI Interface Controller ---
+        function checkInstallationStatus() {
+            const isStandalone = getIsStandalone();
+            const isIOS = getIsIOS();
+        
+            if (!statusText) return;
+        
+            if (isStandalone) {
+                // Condition A: App is installed and currently running standalone
+                if (installInstructions) installInstructions.style.display = 'none';
+                statusText.innerText = "Tap to Connect & Listen"; 
+                statusText.style.color = "blue"; 
+                statusText.style.borderColor = "#111111";
+                statusText.classList.remove('locked');
+            } else if (isIOS) {
+                // Condition B: We are inside a standard iOS Safari browser window
+                if (installInstructions) installInstructions.style.display = 'block';
+                statusText.innerText = "Add to Home Screen (iOS)"; 
+                statusText.style.color = "blue"; 
+                statusText.style.borderColor = "#111111";
+                statusText.classList.remove('locked');
+            } else if (deferredPrompt) {
+                // Condition C: Standard Desktop/Android browser, and PWA is fully ready to install
+                if (installInstructions) installInstructions.style.display = 'block';
+                statusText.innerText = "Install Quantum Gong App"; 
+                statusText.style.color = "#0044cc"; 
+                statusText.style.borderColor = "#111111"; 
+                statusText.classList.remove('locked');
+            } else {
+                // Condition D: Fallback state while waiting for browser prompts to register
+                // Let's adjust text to let them know it's checking
+                if (!appInstalledDetermined) {
+                    statusText.innerText = "Checking App Status...";
+                }
+            }
+        }
+        
+        function lockBrowserInterface() {
+            if (!statusText) return;
+            statusText.innerText = "App Already Installed. Check Home Screen."; 
+            statusText.classList.add('locked'); 
+            statusText.style.color = "green"; 
+            statusText.style.borderColor = "#006633";
+        }
+        
+        // --- 3. Event Listeners ---
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); 
+            deferredPrompt = e;
+            // Fast-track the UI updates the moment the browser says it's ready to install
+            checkInstallationStatus();
+        });
+        
+        window.addEventListener('appinstalled', () => { 
+            appInstalledDetermined = true; 
+            lockBrowserInterface(); 
+            checkInstallationStatus();
+        });
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            const isStandalone = getIsStandalone();
+            const isIOS = getIsIOS();
+        
+            // Initial pass to clear out "Loading" immediately based on hard platform limits
+            checkInstallationStatus();
+        
+            if (!isStandalone) {
+                setTimeout(() => {
+                    // If 1.5 seconds pass, it's not iOS, and no prompt arrived, it's likely already installed on desktop
+                    if (!deferredPrompt && !getIsStandalone() && !isIOS) { 
+                        lockBrowserInterface(); 
+                    }
+                }, 1500); 
+            }
+        });
+        
+        // Extra lifecycle catch-all
+        window.addEventListener('load', checkInstallationStatus);
+        
+        // --- 4. Interactive Actions ---
         async function handleInstallAction() {
-            if (isStandalone && !isListening) {
+            const isStandalone = getIsStandalone();
+            const isIOS = getIsIOS();
+        
+            if (!statusText) return;
+        
+            if (isStandalone && typeof isListening !== 'undefined' && !isListening) {
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
-                    startListening();
+                    if (typeof startListening === 'function') startListening();
                 } else {
                     statusText.innerText = "Permission Denied";
                     statusText.style.color = "red";
                 }
                 return;
             }
-
+        
             if (statusText.classList.contains('locked') || isStandalone) return;
-            if (isIOS) { iosModal.style.display = "block"; } 
-            else if (deferredPrompt) {
+            
+            if (isIOS) { 
+                if (iosModal) iosModal.style.display = "block"; 
+            } else if (deferredPrompt) {
                 deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice; deferredPrompt = null;
-                if (outcome === 'accepted') { lockBrowserInterface(); }
+                const { outcome } = await deferredPrompt.userChoice; 
+                deferredPrompt = null;
+                if (outcome === 'accepted') { 
+                    lockBrowserInterface(); 
+                }
             }
         }
-
-        function closeIosModal() { iosModal.style.display = "none"; }
+        
+        function closeIosModal() { 
+            if (iosModal) iosModal.style.display = "none"; 
+        }
 
         async function startListening() {
             statusText.innerText = "Connecting...";
