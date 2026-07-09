@@ -30,8 +30,8 @@
       </p>
     </div>
 
-<div id="app-status" style="color: white; font-weight: bold;"></div>
-    <div id="iosModal">
+    <div id="app-status" style="color: white; font-weight: bold;"></div>
+        <div id="iosModal">
         <button onclick="closeIosModal()">X</button>
         <h3>iPhone Installation</h3>
         <p>1. Tap the <strong>...</strong> then <strong>Share</strong> button at the bottom of Safari.</p>
@@ -58,18 +58,13 @@
             });
         }
         
-                // --- 1. Global State Variables ---
+        // --- 1. Global State Variables ---
         let deferredPrompt;
         let appInstalledDetermined = false;
         
-        // Safely define elements globally or grab them dynamically
-        const statusText = document.getElementById('status-text') || document.getElementById('app-status'); 
-        const installInstructions = document.getElementById('install-instructions');
-        const iosModal = document.getElementById('ios-modal'); // Assumes your modal id is 'ios-modal'
-        
-        // Dynamic helpers to ensure we check the state at the exact moment needed
+        // Safe global helper functions to check environments dynamically
         function getIsStandalone() {
-            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone || document.referrer.includes('android-app://');
         }
         
         function getIsIOS() {
@@ -80,40 +75,45 @@
         function checkInstallationStatus() {
             const isStandalone = getIsStandalone();
             const isIOS = getIsIOS();
+            
+            // Unifies checking for both potential HTML ID targets
+            const statusText = document.getElementById('status-text') || document.getElementById('app-status');
+            const installInstructions = document.getElementById('install-instructions');
         
             if (!statusText) return;
         
             if (isStandalone) {
-                // Condition A: App is installed and currently running standalone
+                // Condition A: App is installed and running inside its own window
                 if (installInstructions) installInstructions.style.display = 'none';
                 statusText.innerText = "Tap to Connect & Listen"; 
                 statusText.style.color = "blue"; 
                 statusText.style.borderColor = "#111111";
                 statusText.classList.remove('locked');
             } else if (isIOS) {
-                // Condition B: We are inside a standard iOS Safari browser window
+                // Condition B: Standard browser window on an iOS device
                 if (installInstructions) installInstructions.style.display = 'block';
                 statusText.innerText = "Add to Home Screen (iOS)"; 
                 statusText.style.color = "blue"; 
                 statusText.style.borderColor = "#111111";
                 statusText.classList.remove('locked');
             } else if (deferredPrompt) {
-                // Condition C: Standard Desktop/Android browser, and PWA is fully ready to install
+                // Condition C: Standard Desktop/Android browser, PWA can be explicitly installed
                 if (installInstructions) installInstructions.style.display = 'block';
                 statusText.innerText = "Install Quantum Gong App"; 
                 statusText.style.color = "#0044cc"; 
                 statusText.style.borderColor = "#111111"; 
                 statusText.classList.remove('locked');
             } else {
-                // Condition D: Fallback state while waiting for browser prompts to register
-                // Let's adjust text to let them know it's checking
+                // Condition D: Fallback while waiting for browser event loops
                 if (!appInstalledDetermined) {
                     statusText.innerText = "Checking App Status...";
+                    statusText.style.color = "black";
                 }
             }
         }
         
         function lockBrowserInterface() {
+            const statusText = document.getElementById('status-text') || document.getElementById('app-status');
             if (!statusText) return;
             statusText.innerText = "App Already Installed. Check Home Screen."; 
             statusText.classList.add('locked'); 
@@ -126,7 +126,7 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault(); 
             deferredPrompt = e;
-            // Fast-track the UI updates the moment the browser says it's ready to install
+            // Instantly transition button out of checking state when browser prompt is captured
             checkInstallationStatus();
         });
         
@@ -137,29 +137,27 @@
         });
         
         window.addEventListener('DOMContentLoaded', () => {
-            const isStandalone = getIsStandalone();
-            const isIOS = getIsIOS();
-        
-            // Initial pass to clear out "Loading" immediately based on hard platform limits
+            // Break past "Loading..." instantly on initial markup mount
             checkInstallationStatus();
         
-            if (!isStandalone) {
+            // Safety fallback timer if browser features are blocked or app is fully installed on Desktop
+            if (!getIsStandalone()) {
                 setTimeout(() => {
-                    // If 1.5 seconds pass, it's not iOS, and no prompt arrived, it's likely already installed on desktop
-                    if (!deferredPrompt && !getIsStandalone() && !isIOS) { 
+                    if (!deferredPrompt && !getIsStandalone() && !getIsIOS()) { 
                         lockBrowserInterface(); 
                     }
                 }, 1500); 
             }
         });
         
-        // Extra lifecycle catch-all
+        // Run check on full assets payload resolution
         window.addEventListener('load', checkInstallationStatus);
         
         // --- 4. Interactive Actions ---
         async function handleInstallAction() {
             const isStandalone = getIsStandalone();
             const isIOS = getIsIOS();
+            const statusText = document.getElementById('status-text') || document.getElementById('app-status');
         
             if (!statusText) return;
         
@@ -177,6 +175,7 @@
             if (statusText.classList.contains('locked') || isStandalone) return;
             
             if (isIOS) { 
+                const iosModal = document.getElementById('ios-modal');
                 if (iosModal) iosModal.style.display = "block"; 
             } else if (deferredPrompt) {
                 deferredPrompt.prompt();
